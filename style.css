@@ -1,0 +1,173 @@
+body,
+input,
+button {
+  font-family: "Lucida Console", "Consolas", monospace;
+}
+
+.box input,
+.box span {
+  background: none;
+  border: none;
+  font-size: 24px;
+  min-width: 1ch;
+  text-align: center;
+}
+
+button {
+  padding: 1em;
+  font-size: 15px;
+  background: #ba68c8;
+  border: none;
+}
+
+.box {
+  position: absolute;
+  padding: 1em;
+  filter: drop-shadow(2px 2px 5px rgba(0, 0, 0, 0.2));
+  background: #ba68c8;
+  height: 25px;
+}
+
+.box.dragging {
+  z-index: 1;
+}
+
+.box.conditional {
+  padding-bottom: 30px;
+  padding-left: 2em;
+  padding-right: 2em;
+  background: #64b5f6;
+}
+
+.box.conditional:before,
+.box.conditional:after,
+.box.output:before,
+.box.output:after {
+  width: 0;
+  height: 0;
+  top: 0;
+  content: "";
+  border-style: solid;
+  position: absolute;
+}
+
+.box.conditional:before {
+  left: -30px;
+  border-color: transparent #64b5f6 transparent transparent;
+  border-width: 35.5px 30px 35.5px 0;
+}
+
+.box.conditional:after {
+  right: -30px;
+  border-color: transparent transparent transparent #64b5f6;
+  border-width: 35.5px 0 35.5px 30px;
+}
+
+.box.output {
+  background: #81c784;
+}
+
+.box.output:before {
+  left: -30px;
+  border-color: transparent transparent #81c784 transparent;
+  border-width: 0 0 57px 30px;
+}
+
+.box.output:after {
+  right: -30px;
+  border-color: transparent transparent transparent #81c784;
+  border-width: 57px 0 0 30px;
+}
+
+.box.conditional .yesno {
+  display: flex;
+  justify-content: space-around;
+  position: absolute;
+  width: 100%;
+  bottom: 0.5em;
+  left: 0;
+}
+
+.box span {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.box.start,
+.box.end {
+  background: #ffa726;
+  width: 100px;
+  border-radius: 25%/50%;
+}
+
+.dotrow {
+  position: absolute;
+  bottom: -7.5px;
+  display: inline-flex;
+  width: 100%;
+  height: 15px;
+  left: 0;
+  justify-content: space-around;
+}
+
+.dotrow.top {
+  top: -7.5px;
+}
+
+.dotrow.bottom {
+  bottom: -7.5px;
+}
+
+.dot {
+  display: inline-block;
+  margin-left: auto;
+  margin-right: auto;
+  left: 0;
+  right: 0;
+  width: 15px;
+  height: 15px;
+  background: #3d5afe;
+  border-radius: 50%;
+  visibility: hidden;
+}
+
+.box:hover .dot {
+  visibility: visible;
+}
+
+.dot.in {
+  top: -7.5px;
+}
+
+.dot.out {
+  bottom: -7.5px;
+}
+
+.arrow {
+  position: absolute;
+  height: 3px;
+  background: black;
+  border-radius: 1.5px;
+  pointer-events: none;
+  z-index: 2147483647;
+}
+
+.arrow:before {
+  width: 90%;
+  content: "";
+  height: 30px;
+  left: 5%;
+  border-radius: 30px;
+  position: absolute;
+  top: -12px;
+}
+
+.arrow:after {
+  border: 7.5px solid transparent;
+  border-left: 15px solid black;
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: -9px;
+}
