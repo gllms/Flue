@@ -26,10 +26,16 @@ button {
   filter: drop-shadow(2px 2px 5px rgba(0, 0, 0, 0.2));
   background: #ba68c8;
   height: 25px;
+  cursor: move;
+  user-select: none;
 }
 
-.box.dragging {
-  z-index: 1;
+.arrowDragging .box {
+  cursor: pointer;
+}
+
+.box.selected {
+  filter: brightness(1.2);
 }
 
 .box.conditional {
@@ -130,6 +136,7 @@ button {
   background: #3d5afe;
   border-radius: 50%;
   visibility: hidden;
+  cursor: pointer;
 }
 
 .box:hover .dot {
@@ -149,18 +156,26 @@ button {
   height: 3px;
   background: black;
   border-radius: 1.5px;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
   z-index: 2147483647;
 }
 
+.arrow.selected {
+  background: #3d5afe;
+}
+
+.arrowDragging .arrow {
+  pointer-events: none;
+}
+
 .arrow:before {
-  width: 90%;
+  width: 100%;
   content: "";
-  height: 30px;
-  left: 5%;
-  border-radius: 30px;
+  height: 20px;
+  border-radius: 50%;
   position: absolute;
-  top: -12px;
+  top: -9px;
 }
 
 .arrow:after {
@@ -170,4 +185,8 @@ button {
   position: absolute;
   top: -6px;
   right: -9px;
+}
+
+.arrow.selected:after {
+  border-left-color: #3d5afe;
 }

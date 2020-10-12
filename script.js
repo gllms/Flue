@@ -1,5 +1,3 @@
-// https://stackoverflow.com/a/30039971/8463484
-
 const $ = (e) => document.querySelector(e)
 
 let boxes = {
@@ -23,6 +21,8 @@ let id = 2
 let dragElement = undefined
 let dragOffset = { x: 0, y: 0 }
 let z = 1
+
+let selectedItem = undefined
 
 let activeArrow = undefined
 let activeDot = undefined
@@ -60,15 +60,29 @@ function addBox(type) {
 }
 
 document.addEventListener("mousedown", function (e) {
-  if (e.target.classList.contains("out")) addArrow(e)
+  if (e.target.classList.contains("out")) {
+    addArrow(e)
+    document.body.classList.add("arrowDragging")
+  }
   else {
+    if (selectedItem) selectedItem.classList.remove("selected")
     let c = e.target.closest(".box")
-    if (c && !e.target.matches("input")) {
-      dragElement = c
-      dragElement.style.zIndex = ++z
-      let r = dragElement.getBoundingClientRect()
-      dragOffset.x = e.pageX - r.x
-      dragOffset.y = e.pageY - r.y
+    if (c) {
+      selectedItem = c
+      selectedItem.classList.add("selected")
+
+      if (!e.target.matches("input")) {
+        dragElement = c
+        dragElement.style.zIndex = ++z
+        let r = dragElement.getBoundingClientRect()
+        dragOffset.x = e.pageX - r.x
+        dragOffset.y = e.pageY - r.y
+      }
+    } 
+    let a = e.target.closest(".arrow")
+    if (a) {
+      selectedItem = a
+      selectedItem.classList.add("selected")
     }
   }
 })
@@ -90,6 +104,7 @@ document.addEventListener("mousemove", function (e) {
 
 document.addEventListener("mouseup", function (e) {
   dragElement = undefined
+  document.body.classList.remove("arrowDragging")
   if (e.target.classList.contains("in") && activeArrow) {
     let boxId = e.target.closest(".box").getAttribute("data-boxId")
     arrows[activeArrow].in = boxId
@@ -113,6 +128,13 @@ document.addEventListener("input", function (e) {
   }
 })
 
+document.addEventListener("keydown", function (e) {
+  if (e.key == "Delete" && !e.target.matches("input")) {
+    if (selectedItem.matches(".box")) deleteBox(selectedItem.getAttribute("data-boxId"))
+    else deleteArrow(selectedItem.getAttribute("data-arrowId"))
+  }
+})
+
 function resizeInput(e) {
   e.style.width = e.value.length + .2 + "ch"
 }
@@ -128,6 +150,7 @@ function addArrow(e) {
     out: boxId,
     outN: [...e.target.parentNode.children].indexOf(e.target)
   }
+  arrow.setAttribute("data-arrowId", id)
   id++
   activeDot = e.target
   activeArrow = id - 1
@@ -167,6 +190,26 @@ function updateArrows(boxId) {
   for (let i of [...new Set(b.in.concat(b.out))]) {
     updateArrow(i, boxes[arrows[i].out].el.querySelectorAll(".out")[arrows[i].outN], boxes[arrows[i].in].el.querySelector(".in"))
   }
+}
+
+function deleteBox(boxId) {
+  let b = boxes[boxId]
+  for (let i of [...new Set(b.in.concat(b.out))]) {
+    deleteArrow(i)
+  }
+  b.el.remove()
+  delete boxes[boxId]
+  selectedItem = undefined
+}
+
+function deleteArrow(arrowId) {
+  let a = arrows[arrowId]
+  let out = boxes[a.out].out
+  out.splice(out.indexOf(arrowId), 1)
+  let inn = boxes[a.in].in
+  inn.splice(inn.indexOf(arrowId), 1)
+  a.el.remove()
+  delete arrows[arrowId]
 }
 
 function run() {

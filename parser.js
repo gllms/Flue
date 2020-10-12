@@ -1,7 +1,7 @@
 let scope = {}
 
 function parse(input) {
-  return parseAssignment(input)
+  return parseAssignment(input) // Start of chain from lowest precedence to highest
 }
 
 function parseAssignment(input) {
@@ -15,8 +15,8 @@ function parseAssignment(input) {
 
 function parseOr(input) {
   let s = pSplit(input, "or")
-  let vals = s.map((e) => parseAnd(e))
-  if (vals.length == 1) return vals[0]
+  s = s.map((e) => parseAnd(e))
+  if (s.length < 2) return s[0] // If there is only one, there is nothing to compute
   return vals.find((e) => e == true) || vals[0]
 }
 
@@ -188,28 +188,13 @@ function parseExponent(input) {
     e = e.trim()
     if (e[0] == "(") {
       e = e.substring(1, e.length - 1)
-      return parseAssignment(e)
+      return parseAssignment(e) // recursion when parentheses are present
     }
     return getValue(e)
   })
   if (s.length < 2) return s[0]
   return s.reduce((a, b) => a ** b)
 }
-
-// input = input.trim()
-//   if (input[0] == "(") {
-//     input = input.substring(1, input.length - 1)
-//     val = parseAssignment(input)
-//   } else val = getValue(input)
-
-// s = s.map((e) => {
-//   e = e.trim()
-//   if (e[0] == "(") {
-//     e = e.substring(1, e.length - 1)
-//     return parseOr(e)
-//   }
-//   return getValue(e)
-// })
 
 function getValue(input) {
   if (typeof input == "boolean") return input
@@ -220,6 +205,10 @@ function getValue(input) {
   else return scope[input]
 }
 
+
+let operators = ["=", "or", "and", "not", "<", ">", "+", "-", "*", "/", "//", "%", "**"]
+
+// Only splits when outside of parentheses
 function pSplit(input, o) {
   let b = 0
   let result = []
@@ -230,10 +219,9 @@ function pSplit(input, o) {
     if (e == "(") b++
     else if (e == ")") b--
     let u = false
-    if (o == "+" || o == "-") {
+    if (o == "+" || o == "-") { // prevent binary operators to pick up their unary versions
       let before = input.substring(0, i).replace(/ /g, "")
       if (before.length == 0) u = true
-      let operators = ["=", "or", "and", "not", "<", ">", "+", "-", "*", "/", "//", "%", "**"]
       let j = 0
       while (j < operators.length) {
         if (before.substring(before.length - operators[j].length, before.length) == operators[j]) {
