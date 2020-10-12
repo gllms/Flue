@@ -37,7 +37,7 @@ $("#end").style.top = 400 + "px"
 function addBox(type) {
   let newBox = document.createElement("div")
   newBox.classList.add("box", type)
-  newBox.style.left = center / 4 + "px" 
+  newBox.style.left = center / 4 + "px"
   switch (type) {
     case "statement":
       newBox.innerHTML = `<div class="dotrow top"><div class="dot in"></div></div><input type="text" value="x = 1" style="width: 5.2ch"/><div class="dotrow bottom"><div class="dot out"></div></div>`

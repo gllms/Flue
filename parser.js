@@ -160,6 +160,30 @@ function parseDivide(input) {
 
 function parseModulus(input) {
   let s = pSplit(input, "%")
+  s = s.map((e) => parseUnaryPlus(e))
+  if (s.length < 2) return s[0]
+  return s.reduce((a, b) => a % b)
+}
+
+function parseUnaryPlus(input) {
+  input = input.replace(/^\+/, "")
+  return parseUnaryMinus(input)
+}
+
+function parseUnaryMinus(input) {
+  let r = /^-/
+  let um = false
+  if (r.test(input)) {
+    input = input.replace(r, "")
+    um = true
+  }
+
+  let val = parseExponent(input);
+  return um ? -val : val
+}
+
+function parseExponent(input) {
+  let s = pSplit(input, "**")
   s = s.map((e) => {
     e = e.trim()
     if (e[0] == "(") {
@@ -169,7 +193,7 @@ function parseModulus(input) {
     return getValue(e)
   })
   if (s.length < 2) return s[0]
-  return s.reduce((a, b) => a % b)
+  return s.reduce((a, b) => a ** b)
 }
 
 // input = input.trim()
@@ -196,7 +220,7 @@ function getValue(input) {
   else return scope[input]
 }
 
-function pSplit(input, o, unary) {
+function pSplit(input, o) {
   let b = 0
   let result = []
   let c = ""
@@ -206,12 +230,22 @@ function pSplit(input, o, unary) {
     if (e == "(") b++
     else if (e == ")") b--
     let u = false
-    if (!unary && (o == "+" || o == "-")) {
+    if (o == "+" || o == "-") {
       let before = input.substring(0, i).replace(/ /g, "")
       if (before.length == 0) u = true
-      else if (["=", "or", "and", "not", "<", ">", "+", "-", "*", "/", "//", "%", ""].some((e) => { before.substring(before.length - e.length, before.length) == e })) u = true
+      let operators = ["=", "or", "and", "not", "<", ">", "+", "-", "*", "/", "//", "%", "**"]
+      let j = 0
+      while (j < operators.length) {
+        if (before.substring(before.length - operators[j].length, before.length) == operators[j]) {
+          u = true
+          break
+        }
+        j++
+      }
     }
-    if (b == 0 && input.substring(i, i + o.length) == o && !["<", ">", "!"].includes(input[i - 1]) && !u) {
+    if (o == "=" && (input[i - 1] == "=" || input[i + 1] == "=")) u = true
+    if (o == "*" && (input[i - 1] == "*" || input[i + 1] == "*")) u = true
+    if (b == 0 && input.substring(i, i + o.length) == o && !["<", ">", "!", "*"].includes(input[i - 1]) && !u) {
       result.push(c.trim())
       c = ""
       i += o.length
