@@ -1,6 +1,7 @@
 body,
 input,
-button {
+button,
+#console {
   font-family: "Lucida Console", "Consolas", monospace;
 }
 
@@ -14,10 +15,39 @@ button {
 }
 
 button {
-  padding: 1em;
-  font-size: 15px;
-  background: #ba68c8;
+  width: 50px;
+  height: 30px;
+  font-size: 18px;
+  background: #ffa726;
   border: none;
+}
+
+button:focus {
+  outline: none;
+  filter: brightness(1.2);
+}
+
+button:active {
+  filter: brightness(.8);
+}
+
+#statementButton {
+  background: #ba68c8;
+}
+
+#conditionalButton {
+  background: #64b5f6;
+  clip-path: polygon(10% 0, 90% 0, 100% 50%, 90% 100%, 10% 100%, 0 50%);
+}
+
+#inputButton {
+  background: #81c784;
+  clip-path: polygon(0 0, 100% 0, 80% 100%, 20% 100%);
+}
+
+#outputButton {
+  background: #81c784;
+  clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%);
 }
 
 .box {
@@ -47,6 +77,8 @@ button {
 
 .box.conditional:before,
 .box.conditional:after,
+.box.input:before,
+.box.input:after,
 .box.output:before,
 .box.output:after {
   width: 0;
@@ -69,8 +101,20 @@ button {
   border-width: 35.5px 0 35.5px 30px;
 }
 
-.box.output {
+.box.input, .box.output {
   background: #81c784;
+}
+
+.box.input:before {
+  left: -30px;
+  border-color: transparent #81c784 transparent transparent;
+  border-width: 0 30px 57px 0;
+}
+
+.box.input:after {
+  right: -30px;
+  border-color: #81c784 transparent transparent transparent;
+  border-width: 57px 30px 0 0;
 }
 
 .box.output:before {
@@ -189,4 +233,19 @@ button {
 
 .arrow.selected:after {
   border-left-color: #3d5afe;
+}
+
+#console {
+  font-size: 18px;
+  padding: 1em;
+}
+
+table {
+  border-collapse: collapse;
+}
+td {
+  border: 2px solid #ccc;
+  padding: .5em 1em;
+  min-width: 3em;
+  text-align: right;
 }

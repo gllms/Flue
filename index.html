@@ -1,30 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fludiagramo</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fludiagramo</title>
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <button onclick="addBox('statement')">Add statement</button>
-    <br />
-    <br />
-    <button onclick="addBox('conditional')">Add conditional</button>
-    <br />
-    <br />
-    <button onclick="addBox('output')">Add output</button>
-    <br />
-    <br />
+  <div class="toolbar">
+    <button onclick="addBox('statement')" id="statementButton">+</button>
+    <button onclick="addBox('conditional')" id="conditionalButton">+</button>
+    <button onclick="addBox('input')" id="inputButton">+</button>
+    <button onclick="addBox('output')" id="outputButton">+</button>
     <button onclick="run()">Run</button>
-    <div id="canvas">
-        <div id="boxes">
-            <div class="box start" id="start" data-boxId="0"><span>START</span><div class="dotrow bottom"><div class="dot out"></div></div></div>
-            <div class="box end" id="end" data-boxId="1"><div class="dotrow top"><div class="dot in"></div></div><span>END</span></div>
-        </div>
-        <div id="arrows"></div>
+    <h1>Scope</h1>
+    <table>
+      <tbody id="scope"></tbody>
+    </table>
+    <h1>Console</h1>
+    <div id="console"></div>
     </div>
-    <script src="parser.js"></script>
-    <script src="script.js"></script>
+  <div id="canvas">
+    <div id="boxes">
+      <div class="box start" id="start" data-boxId="0"><span>START</span>
+        <div class="dotrow bottom">
+          <div class="dot out"></div>
+        </div>
+      </div>
+      <div class="box end" id="end" data-boxId="1">
+        <div class="dotrow top">
+          <div class="dot in"></div>
+        </div><span>END</span>
+      </div>
+    </div>
+    <div id="arrows"></div>
+  </div>
+  <script src="parser.js"></script>
+  <script src="script.js"></script>
 </body>
+
 </html>

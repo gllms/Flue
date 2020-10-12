@@ -9,6 +9,7 @@ function parseAssignment(input) {
   let expr = parseOr(s.pop())
   if (s.length > 0) {
     s.forEach((e) => scope[e] = expr)
+    updateScope()
   }
   return expr
 }

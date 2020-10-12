@@ -45,6 +45,9 @@ function addBox(type) {
     case "conditional":
       newBox.innerHTML = `<div class="dotrow top"><div class="dot in"></div></div><input type="text" value="x < 5" style="width: 5.2ch"/><div class="yesno"><span>Yes</span><span>No</span></div><div class="dotrow bottom"><div class="dot out"></div><div class="dot out"></div></div>`
       break
+    case "input":
+      newBox.innerHTML = `<div class="dotrow top"><div class="dot in"></div></div><input type="text" value="p, q" style="width: 4.2ch"/><div class="dotrow bottom"><div class="dot out"></div></div>`
+      break
     case "output":
       newBox.innerHTML = `<div class="dotrow top"><div class="dot in"></div></div><input type="text" value="x" style="width: 1.2ch"/><div class="dotrow bottom"><div class="dot out"></div></div>`
   }
@@ -78,7 +81,7 @@ document.addEventListener("mousedown", function (e) {
         dragOffset.x = e.pageX - r.x
         dragOffset.y = e.pageY - r.y
       }
-    } 
+    }
     let a = e.target.closest(".arrow")
     if (a) {
       selectedItem = a
@@ -130,8 +133,10 @@ document.addEventListener("input", function (e) {
 
 document.addEventListener("keydown", function (e) {
   if (e.key == "Delete" && !e.target.matches("input")) {
-    if (selectedItem.matches(".box")) deleteBox(selectedItem.getAttribute("data-boxId"))
-    else deleteArrow(selectedItem.getAttribute("data-arrowId"))
+    if (selectedItem) {
+      if (selectedItem.matches(".box")) deleteBox(selectedItem.getAttribute("data-boxId"))
+      else deleteArrow(selectedItem.getAttribute("data-arrowId"))
+    }
   }
 })
 
@@ -212,15 +217,23 @@ function deleteArrow(arrowId) {
   delete arrows[arrowId]
 }
 
+function updateScope() {
+  $("#scope").innerHTML = ""
+  for (const e in scope) {
+    $("#scope").innerHTML += `<tr><td>${e}</td><td>${scope[e]}</td></tr>`
+  }
+}
+
 function run() {
   scope = {}
+  $("#scope").innerHTML = ""
+  $("#console").innerHTML = ""
   let list = []
   list = list.concat(runBox(0))
   while (list.length > 0) {
     list = list.concat(runBox(list[0]))
     list.shift()
   }
-  alert("done")
 }
 
 function runBox(boxId) {
@@ -238,11 +251,19 @@ function runBox(boxId) {
       as = b.out
       break
     case "conditional":
-      i = parse(b.el.querySelector("input").value) ? 0 : 1
+      let i = parse(b.el.querySelector("input").value) ? 0 : 1
       as = b.out.filter((e) => arrows[e].outN == i)
       break
+    case "input":
+      b.el.querySelector("input").value.split(",").forEach((e) => {
+        e = e.trim()
+        scope[e] = prompt(e + ":")
+      })
+      updateScope()
+      as = b.out
+      break
     case "output":
-      alert(parse(b.el.querySelector("input").value))
+      $("#console").innerHTML += parse(b.el.querySelector("input").value) + "<br />"
       as = b.out
       break
     default:
