@@ -1,4 +1,9 @@
 let scope = {}
+let builtIn = {
+  "int": (e) => parseInt(e),
+  "float": (e) => parseFloat(e),
+  "str": (e) => String(e)
+}
 
 function parse(input) {
   return parseAssignment(input) // Start of chain from lowest precedence to highest
@@ -187,9 +192,15 @@ function parseExponent(input) {
   let s = pSplit(input, "**")
   s = s.map((e) => {
     e = e.trim()
-    if (e[0] == "(") {
-      e = e.substring(1, e.length - 1)
-      return parseAssignment(e) // recursion when parentheses are present
+    let r = /^(\w*) *\((.*)\)/
+    if (r.test(e)) {
+      let ex = r.exec(e)
+      let result = parseAssignment(ex[2])
+      if (ex[1].length > 0) {
+        return builtIn[ex[1]](result)
+      } else {
+        return result // recursion when parentheses are present
+      }
     }
     return getValue(e)
   })
@@ -199,10 +210,10 @@ function parseExponent(input) {
 
 function getValue(input) {
   if (typeof input == "boolean") return input
-  // input = input.trim()
   if (input == "true") return true
   else if (input == "false") return false
   else if (!isNaN(parseFloat(input))) return parseFloat(input)
+  else if (input.startsWith("'") || input.startsWith("\"")) return input.substring(1, input.length - 1)
   else return scope[input]
 }
 
