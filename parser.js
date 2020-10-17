@@ -5,13 +5,162 @@ let builtIn = {
   "str": (e) => String(e)
 }
 
-function parse(input) {
-  return parseAssignment(input) // Start of chain from lowest precedence to highest
-}
+let ops = [
+  {
+    symbol: "or",
+    fn: (s) => s.find((e) => e == true) || s[0]
+  },
+  {
+    symbol: "and",
+    fn: (s) => s.every((e) => e == true) ? s[s.length - 1] : s.find((e) => e == false)
+  },
+  {
+    unary: true,
+    symbol: "not",
+    pre: (s) => {
+      let r = /^not/
+      let nt = false
+      if (r.test(s)) {
+        s = s.replace(r, "")
+        nt = true
+      }
+      return [s, nt]
+    },
+    post: (s, nt) => {
+      return nt ? !s : s
+    }
+  },
+  {
+    symbol: "<=",
+    fn: (s) => {
+      let result = true
+      for (let i = 0; i < s.length - 1; i++) {
+        if (s[i] > s[i + 1]) {
+          result = false
+          break
+        }
+      }
+      return result
+    }
+  },
+  {
+    symbol: "<",
+    fn: (s) => {
+      let result = true
+      for (let i = 0; i < s.length - 1; i++) {
+        if (s[i] >= s[i + 1]) {
+          result = false
+          break
+        }
+      }
+      return result
+    }
+  },
+  {
+    symbol: ">=",
+    fn: (s) => {
+      let result = true
+      for (let i = 0; i < s.length - 1; i++) {
+        if (s[i] < s[i + 1]) {
+          result = false
+          break
+        }
+      }
+      return result
+    }
+  },
+  {
+    symbol: ">",
+    fn: (s) => {
+      let result = true
+      for (let i = 0; i < s.length - 1; i++) {
+        if (s[i] <= s[i + 1]) {
+          result = false
+          break
+        }
+      }
+      return result
+    }
+  },
+  {
+    symbol: "!=",
+    fn: (s) => {
+      let result = true
+      for (let i = 0; i < s.length - 1; i++) {
+        if (s[i] == s[i + 1]) {
+          result = false
+          break
+        }
+      }
+      return result
+    }
+  },
+  {
+    symbol: "==",
+    fn: (s) => {
+      let result = true
+      for (let i = 0; i < s.length - 1; i++) {
+        if (s[i] != s[i + 1]) {
+          result = false
+          break
+        }
+      }
+      return result
+    }
+  },
+  {
+    symbol: "+",
+    fn: (s) => s.reduce((a, b) => a + b)
+  },
+  {
+    symbol: "-",
+    fn: (s) => s.reduce((a, b) => a - b)
+  },
+  {
+    symbol: "*",
+    fn: (s) => s.reduce((a, b) => a * b)
+  },
+  {
+    symbol: "//",
+    fn: (s) => s.reduce((a, b) => Math.floor(a - b))
+  },
+  {
+    symbol: "/",
+    fn: (s) => s.reduce((a, b) => a / b)
+  },
+  {
+    symbol: "%",
+    fn: (s) => s.reduce((a, b) => a % b)
+  },
+  {
+    unary: true,
+    symbol: "+",
+    pre: (s) => [s.replace(/^\+/, "")],
+    post: (s) => s
+  },
+  {
+    unary: true,
+    symbol: "-",
+    pre: (s) => {
+      let r = /^-/
+      let um = false
+      if (r.test(s)) {
+        s = s.replace(r, "")
+        um = true
+      }
+      return [s, um]
+    },
+    post: (s, um) => um ? -s : s
+  },
+  {
+    symbol: "**",
+    fn: (s) => s.reduce((a, b) => a ** b)
+  }
+]
 
-function parseAssignment(input) {
-  let s = pSplit(input, "=")
-  let expr = parseOr(s.pop())
+function parse(input) {
+  let s = pSplit(input, "=") // First parse assignments
+  let expr = parseOp(0, s.pop()) // Start of chain from lowest precedence to highest
   if (s.length > 0) {
     s.forEach((e) => scope[e] = expr)
     updateScope()
@@ -19,183 +168,29 @@ function parseAssignment(input) {
   return expr
 }
 
-function parseOr(input) {
-  let s = pSplit(input, "or")
-  s = s.map((e) => parseAnd(e))
-  if (s.length < 2) return s[0] // If there is only one, there is nothing to compute
-  return vals.find((e) => e == true) || vals[0]
-}
-
-function parseAnd(input) {
-  let s = pSplit(input, "and")
-  s = s.map((e) => parseNot(e))
-  if (s.length < 2) return s[0]
-  return s.every((e) => e == true) ? s[s.length - 1] : s.find((e) => e == false)
-}
-
-function parseNot(input) {
-  let r = /^not/
-  let nt = false
-  if (r.test(input)) {
-    input = input.replace(r, "")
-    nt = true
+function parseOp(i, input) {
+  let op = ops[i]
+  if (op.unary) {
+    [val, temp] = op.pre(input)
+    if (ops[i + 1]) val = parseOp(i + 1, val)
+    else val = checkParentheses(val)
+    return op.post(val, temp)
+  } else {
+    let s = pSplit(input, op.symbol)
+    if (ops[i + 1]) s = s.map((e) => parseOp(i + 1, e))
+    else s = checkParentheses(s)
+    if (s.length < 2) return s[0] // If there is only one, there is nothing to compute
+    else return op.fn(s)
   }
-
-  let val = parseLessEqual(input);
-  return nt ? !val : val
 }
 
-function parseLessEqual(input) {
-  let s = pSplit(input, "<=")
-  s = s.map((e) => parseLess(e))
-  if (s.length < 2) return s[0]
-  let result = true
-  for (let i = 0; i < s.length - 1; i++) {
-    if (s[i] > s[i + 1]) {
-      result = false
-      break
-    }
-  }
-  return result
-}
-
-function parseLess(input) {
-  let s = pSplit(input, "<")
-  s = s.map((e) => parseGreaterEqual(e))
-  if (s.length < 2) return s[0]
-  let result = true
-  for (let i = 0; i < s.length - 1; i++) {
-    if (s[i] >= s[i + 1]) {
-      result = false
-      break
-    }
-  }
-  return result
-}
-
-function parseGreaterEqual(input) {
-  let s = pSplit(input, ">=")
-  s = s.map((e) => parseGreater(e))
-  if (s.length < 2) return s[0]
-  let result = true
-  for (let i = 0; i < s.length - 1; i++) {
-    if (s[i] < s[i + 1]) {
-      result = false
-      break
-    }
-  }
-  return result
-}
-
-function parseGreater(input) {
-  let s = pSplit(input, ">")
-  s = s.map((e) => parseNotEqual(e))
-  if (s.length < 2) return s[0]
-  let result = true
-  for (let i = 0; i < s.length - 1; i++) {
-    if (s[i] <= s[i + 1]) {
-      result = false
-      break
-    }
-  }
-  return result
-}
-
-function parseNotEqual(input) {
-  let s = pSplit(input, "!=")
-  s = s.map((e) => parseEqual(e))
-  if (s.length < 2) return s[0]
-  let result = true
-  for (let i = 0; i < s.length - 1; i++) {
-    if (s[i] == s[i + 1]) {
-      result = false
-      break
-    }
-  }
-  return result
-}
-
-function parseEqual(input) {
-  let s = pSplit(input, "==")
-  s = s.map((e) => parsePlus(e))
-  if (s.length < 2) return s[0]
-  let result = true
-  for (let i = 0; i < s.length - 1; i++) {
-    if (s[i] != s[i + 1]) {
-      result = false
-      break
-    }
-  }
-  return result
-}
-
-function parsePlus(input) {
-  let s = pSplit(input, "+")
-  s = s.map((e) => parseMinus(e))
-  if (s.length < 2) return s[0]
-  return s.reduce((a, b) => a + b)
-}
-
-function parseMinus(input) {
-  let s = pSplit(input, "-")
-  s = s.map((e) => parseTimes(e))
-  if (s.length < 2) return s[0]
-  return s.reduce((a, b) => a - b)
-}
-
-function parseTimes(input) {
-  let s = pSplit(input, "*")
-  s = s.map((e) => parseIntDivide(e))
-  if (s.length < 2) return s[0]
-  return s.reduce((a, b) => a * b)
-}
-
-function parseIntDivide(input) {
-  let s = pSplit(input, "//")
-  s = s.map((e) => parseDivide(e))
-  if (s.length < 2) return s[0]
-  return s.reduce((a, b) => Math.floor(a / b))
-}
-
-function parseDivide(input) {
-  let s = pSplit(input, "/")
-  s = s.map((e) => parseModulus(e))
-  if (s.length < 2) return s[0]
-  return s.reduce((a, b) => a / b)
-}
-
-function parseModulus(input) {
-  let s = pSplit(input, "%")
-  s = s.map((e) => parseUnaryPlus(e))
-  if (s.length < 2) return s[0]
-  return s.reduce((a, b) => a % b)
-}
-
-function parseUnaryPlus(input) {
-  input = input.replace(/^\+/, "")
-  return parseUnaryMinus(input)
-}
-
-function parseUnaryMinus(input) {
-  let r = /^-/
-  let um = false
-  if (r.test(input)) {
-    input = input.replace(r, "")
-    um = true
-  }
-
-  let val = parseExponent(input);
-  return um ? -val : val
-}
-
-function parseExponent(input) {
-  let s = pSplit(input, "**")
-  s = s.map((e) => {
+function checkParentheses(s) {
+  return s.map((e) => {
     e = e.trim()
     let r = /^(\w*) *\((.*)\)/
     if (r.test(e)) {
       let ex = r.exec(e)
-      let result = parseAssignment(ex[2])
+      let result = parse(ex[2])
       if (ex[1].length > 0) {
         return builtIn[ex[1]](result)
       } else {
@@ -204,21 +199,19 @@ function parseExponent(input) {
     }
     return getValue(e)
   })
-  if (s.length < 2) return s[0]
-  return s.reduce((a, b) => a ** b)
 }
 
 function getValue(input) {
   if (typeof input == "boolean") return input
-  if (input == "true") return true
-  else if (input == "false") return false
+  else if (input == "True") return true
+  else if (input == "False") return false
   else if (!isNaN(parseFloat(input))) return parseFloat(input)
   else if (input.startsWith("'") || input.startsWith("\"")) return input.substring(1, input.length - 1)
   else return scope[input]
 }
 
 
-let operators = ["=", "or", "and", "not", "<", ">", "+", "-", "*", "/", "//", "%", "**"]
+let operators = [...new Set(ops.map((e) => e.symbol))]
 
 // Only splits when outside of parentheses
 function pSplit(input, o) {
