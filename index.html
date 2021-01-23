@@ -10,11 +10,11 @@
 
 <body>
   <div class="toolbar">
-    <button onclick="addBox('statement')" id="statementButton">+</button>
-    <button onclick="addBox('conditional')" id="conditionalButton">+</button>
-    <button onclick="addBox('input')" id="inputButton">+</button>
-    <button onclick="addBox('output')" id="outputButton">+</button>
-    <button onclick="run()">Run</button>
+    <button onclick="flue.addBox('statement')" id="statementButton">+</button>
+    <button onclick="flue.addBox('conditional')" id="conditionalButton">+</button>
+    <button onclick="flue.addBox('input')" id="inputButton">+</button>
+    <button onclick="flue.addBox('output')" id="outputButton">+</button>
+    <button onclick="flue.run()">Run</button>
     <h1>Scope</h1>
     <table>
       <tbody id="scope"></tbody>
@@ -23,21 +23,11 @@
     <div id="console"></div>
     </div>
   <div id="canvas">
-    <div id="boxes">
-      <div class="box start" id="start" data-boxId="0"><span>START</span>
-        <div class="dotrow bottom">
-          <div class="dot out"></div>
-        </div>
-      </div>
-      <div class="box end" id="end" data-boxId="1">
-        <div class="dotrow top">
-          <div class="dot in"></div>
-        </div><span>END</span>
-      </div>
-    </div>
+    <div id="boxes"></div>
     <div id="arrows"></div>
   </div>
   <script src="parser.js"></script>
+  <script src="flue.js"></script>
   <script src="script.js"></script>
 </body>
 

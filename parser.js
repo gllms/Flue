@@ -163,7 +163,7 @@ function parse(input) {
   let expr = parseOp(0, s.pop()) // Start of chain from lowest precedence to highest
   if (s.length > 0) {
     s.forEach((e) => scope[e] = expr)
-    updateScope()
+    flue.updateScope()
   }
   return expr
 }

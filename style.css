@@ -58,6 +58,7 @@ button:active {
   height: 25px;
   cursor: move;
   user-select: none;
+  z-index: 1;
 }
 
 .arrowDragging .box {
@@ -159,6 +160,7 @@ button:active {
   height: 15px;
   left: 0;
   justify-content: space-around;
+  pointer-events: none;
 }
 
 .dotrow.top {
@@ -181,6 +183,7 @@ button:active {
   border-radius: 50%;
   visibility: hidden;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 .box:hover .dot {
@@ -195,34 +198,60 @@ button:active {
   bottom: -7.5px;
 }
 
-.arrow {
+.arrow .arrowPart, .arrow .arrowEnd {
   position: absolute;
-  height: 3px;
   background: black;
-  border-radius: 1.5px;
   pointer-events: auto;
   cursor: pointer;
-  z-index: 2147483647;
+  /* z-index: 2147483647; */
 }
 
-.arrow.selected {
+.arrow .arrowPart:nth-child(2), .arrow .arrowPart:nth-child(3), .arrow .arrowPart:nth-child(4) {
+  z-index: auto;
+}
+
+.arrow .arrowEnd {
+  height: 3px;
+}
+
+.arrow.selected * {
   background: #3d5afe;
 }
 
-.arrowDragging .arrow {
+.arrowDragging .arrow * {
   pointer-events: none;
 }
 
-.arrow:before {
-  width: 100%;
+.arrow .arrowEnd:before, .arrow .arrowPart:before {
   content: "";
-  height: 20px;
-  border-radius: 50%;
   position: absolute;
+  border-radius: 9px;
+  z-index: -1;
+}
+
+.arrow .arrowEnd:before, .arrow .arrowPart:nth-child(2):before, .arrow .arrowPart:nth-child(4):before {
+  width: 100%;
+  height: 20px;
   top: -9px;
 }
 
-.arrow:after {
+.arrow .arrowPart:nth-child(1):before, .arrow .arrowPart:nth-child(3):before {
+  height: calc(100% + 8px);
+  width: 20px;
+  left: -9px;
+}
+
+.arrow .arrowPart:nth-child(4):before {
+  width: calc(18px + 100%);
+  left: -9px;
+}
+
+.arrow .arrowEnd:before {
+  width: calc(9px + 100%);
+  left: -9px;
+}
+
+.arrow .arrowEnd:after {
   border: 7.5px solid transparent;
   border-left: 15px solid black;
   content: "";
@@ -231,7 +260,7 @@ button:active {
   right: -9px;
 }
 
-.arrow.selected:after {
+.arrow.selected .arrowEnd:after {
   border-left-color: #3d5afe;
 }
 
