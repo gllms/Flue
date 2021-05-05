@@ -8,7 +8,6 @@ class Flue {
 
     this.selectedItem = undefined
     this.dragElement = undefined
-    this.dragOffset = { x: 0, y: 0 }
 
     this.activeArrow = undefined
     this.activeDot = undefined
@@ -17,10 +16,16 @@ class Flue {
     this.arrowThickness = 3
 
     this.parser = new Parser()
+    this.running = false
+    this.stopped = false
+    this.restart = false
 
     document.addEventListener("mousedown", (e) => {
       if (e.target.classList.contains("out")) {
-        this.addArrow(e)
+        let boxId = e.target.closest(".box").getAttribute("data-boxId")
+        let outN = [...e.target.parentNode.children].indexOf(e.target)
+        this.addArrow(boxId, outN, e.target)
+        this.updateArrow(this.activeArrow, this.activeDot, e.pageX, e.pageY)
         document.body.classList.add("arrowDragging")
       }
       else {
@@ -34,8 +39,9 @@ class Flue {
             this.dragElement = c
             this.dragElement.style.zIndex = ++this.nextZ
             let r = this.dragElement.getBoundingClientRect()
-            this.dragOffset.x = e.pageX - r.x
-            this.dragOffset.y = e.pageY - r.y
+            let id = this.dragElement.getAttribute("data-boxId")
+            this.boxes[id].dragOffset.x = e.pageX - r.x
+            this.boxes[id].dragOffset.y = e.pageY - r.y
           }
         }
         let a = e.target.closest(".arrow")
@@ -49,9 +55,10 @@ class Flue {
     document.addEventListener("mousemove", (e) => {
       if (this.dragElement) {
         e.preventDefault()
-        this.dragElement.style.left = e.pageX - this.dragOffset.x + "px"
-        this.dragElement.style.top = e.pageY - this.dragOffset.y + "px"
-        this.updateArrows(this.dragElement.getAttribute("data-boxId"))
+        let id = this.dragElement.getAttribute("data-boxId")
+        this.boxes[id].x = e.pageX
+        this.boxes[id].y = e.pageY
+        this.updateArrows(id)
       }
       if (this.activeArrow) {
         if (this.activeArrow && this.arrows[this.activeArrow].el) {
@@ -65,7 +72,7 @@ class Flue {
       this.dragElement = undefined
       document.body.classList.remove("arrowDragging")
       if (e.target.classList.contains("in") && this.activeArrow) {
-        let boxId = e.target.closest(".box").getAttribute("data-boxId")
+        let boxId = parseInt(e.target.closest(".box").getAttribute("data-boxId"))
         this.arrows[this.activeArrow].in = boxId
         this.boxes[boxId].in.push(this.activeArrow)
         this.updateArrow(this.activeArrow, this.activeDot, e.target)
@@ -82,8 +89,12 @@ class Flue {
     document.addEventListener("input", (e) => {
       let c = e.target.closest(".box")
       if (c) {
-        if (e.target.matches("input[type=text]")) this.resizeInput(e.target)
-        this.updateArrows(e.target.closest(".box").getAttribute("data-boxId"))
+        if (e.target.matches("input[type=text]")) {
+          this.resizeInput(e.target)
+          let id = e.target.closest(".box").getAttribute("data-boxId")
+          this.updateArrows(id)
+          this.boxes[id].value = e.target.value;
+        }
       }
     })
 
@@ -91,32 +102,45 @@ class Flue {
       if (e.key == "Delete" && !e.target.matches("input")) {
         if (this.selectedItem) {
           if (this.selectedItem.matches(".box")) this.deleteBox(this.selectedItem.getAttribute("data-boxId"))
-          else this.deleteArrow(this.selectedItem.getAttribute("data-arrowId"))
+          else this.deleteArrow(parseInt(this.selectedItem.getAttribute("data-arrowId")))
         }
       }
     })
+
+    window.addEventListener('beforeunload', (e) => {
+      if (loaded)
+        this.save()
+    });
   }
 
-  addBox(type) {
-    let box = new Box(type)
-    box.el.setAttribute("data-boxId", this.nextId)
+  addBox(type, id) {
+    if (this.nextId < id) this.nextId = id
+    let box = new Box(type, this.nextId)
     this.boxes[this.nextId++] = box
     $("#boxes").appendChild(box.el)
     return box
   }
 
-  addArrow(e) {
+  addArrow(boxId, outN, activeDot, id) {
     let arrow = new Arrow()
     $("#arrows").appendChild(arrow.el)
-    let boxId = e.target.closest(".box").getAttribute("data-boxId")
     arrow.out = boxId
-    arrow.outN = [...e.target.parentNode.children].indexOf(e.target)
-    arrow.el.setAttribute("data-arrowId", this.nextId)
-    this.boxes[boxId].out.push(this.nextId)
-    this.arrows[this.nextId] = arrow
-    this.activeArrow = this.nextId++
-    this.activeDot = e.target
-    this.updateArrow(this.activeArrow, this.activeDot, e.pageX, e.pageY)
+    arrow.outN = outN
+    let d = this.nextId
+    if (id === undefined) {
+      this.boxes[boxId].out.push(this.nextId)
+      this.nextId++
+    }
+    else {
+      if (this.nextId < id)
+        this.nextId = id
+      d = id
+    }
+    arrow.el.setAttribute("data-arrowId", d)
+    this.arrows[d] = arrow
+    this.activeArrow = d
+    this.activeDot = activeDot
+    return arrow
   }
 
   updateArrow(arrow, beginPoint, endPointX, endPointY) {
@@ -234,20 +258,39 @@ class Flue {
   updateScope() {
     $("#scope").innerHTML = ""
     for (const e in this.parser.scope) {
-      $("#scope").innerHTML += `<tr><td>${e}</td><td>${this.parser.scope[e]}</td></tr>`
+      let val = this.parser.scope[e];
+      if (typeof val == "string") val = "\"" + val + "\"";
+      $("#scope").innerHTML += `<tr><td>${e}</td><td>${val}</td></tr>`
     }
   }
 
   run() {
+    if (this.running) {
+      this.stopped = this.restart = true
+      return
+    }
+    this.running = true
     this.parser.scope = Object.assign({}, this.parser.builtins)
     $("#scope").innerHTML = ""
     $("#console").innerHTML = ""
     let list = []
-    list = list.concat(this.runBox(0))
-    while (list.length > 0) {
-      list = list.concat(this.runBox(list[0]))
-      list.shift()
-    }
+    list = list.concat(this.runBox(0));
+    (function () {
+      function runNext() {
+        if (list.length > 0 && !this.stopped) {
+          list = list.concat(this.runBox(list[0]))
+          list.shift()
+          setTimeout(() => runNext.call(this), 0)
+        } else {
+          this.stopped = this.running = false
+          if (this.restart) {
+            this.restart = false
+            this.run()
+          }
+        }
+      }
+      runNext.call(this)
+    }).call(this)
   }
 
   runBox(boxId) {
@@ -277,7 +320,9 @@ class Flue {
         as = b.out
         break
       case "output":
-        $("#console").innerHTML += this.parser.run(this.parser.parse(this.parser.tokenize(b.el.querySelector("input").value))) + "<br />"
+        let c = $("#console")
+        c.innerHTML += this.parser.run(this.parser.parse(this.parser.tokenize(b.el.querySelector("input").value))) + "<br />"
+        c.scrollTo(0, c.scrollHeight)
         as = b.out
         break
       default:
@@ -291,14 +336,29 @@ class Flue {
     }, this)
     return bs
   }
+
+  stop() {
+    if (this.running)
+      this.stopped = true
+  }
+
+  save() {
+    localStorage.setItem("flue-save", JSON.stringify({ boxes: this.boxes, arrows: this.arrows }))
+  }
 }
 
 class Box {
-  constructor(type = "statement") {
+  constructor(type = "statement", id = -1) {
     this.type = type
+    this.id = id
     this.el = document.createElement("div")
     this.el.classList.add("box", type)
-    this.el.style.left = center / 4 + "px"
+    this.el.setAttribute("data-boxId", this.id)
+    this.dragOffset = { x: 0, y: 0 }
+    this.value = ""
+
+    this._x = window.innerWidth / 2 / 4
+    this._y = 0
     switch (type) {
       case "start":
         this.el.innerHTML = `<span>START</span><div class="dotrow bottom"><div class="dot out"></div></div>`
@@ -308,18 +368,32 @@ class Box {
         break
       case "statement":
         this.el.innerHTML = `<div class="dotrow top"><div class="dot in"></div></div><input type="text" value="x = 1" style="width: 5.2ch"/><div class="dotrow bottom"><div class="dot out"></div></div>`
+        this.value = "x = 1"
         break
       case "conditional":
         this.el.innerHTML = `<div class="dotrow top"><div class="dot in"></div></div><input type="text" value="x < 5" style="width: 5.2ch"/><div class="yesno"><span>Yes</span><span>No</span></div><div class="dotrow bottom"><div class="dot out"></div><div class="dot out"></div></div>`
+        this.value = "x < 5"
         break
       case "input":
         this.el.innerHTML = `<div class="dotrow top"><div class="dot in"></div></div><input type="text" value="p, q" style="width: 4.2ch"/><div class="dotrow bottom"><div class="dot out"></div></div>`
+        this.value = "p, q"
         break
       case "output":
         this.el.innerHTML = `<div class="dotrow top"><div class="dot in"></div></div><input type="text" value="x" style="width: 1.2ch"/><div class="dotrow bottom"><div class="dot out"></div></div>`
+        this.value = "x"
     }
     this.out = []
     this.in = []
+  }
+
+  set x(val) {
+    this._x = val - this.dragOffset.x
+    this.el.style.left = this._x + "px"
+  }
+
+  set y(val) {
+    this._y = val - this.dragOffset.y
+    this.el.style.top = this._y + "px"
   }
 }
 

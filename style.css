@@ -50,13 +50,17 @@ button:active {
   clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%);
 }
 
+#stopButton {
+  width: unset;
+}
+
 .box {
   position: absolute;
   padding: 1em;
   filter: drop-shadow(2px 2px 5px rgba(0, 0, 0, 0.2));
   background: #ba68c8;
   height: 25px;
-  cursor: move;
+  cursor: pointer;
   user-select: none;
   z-index: 1;
 }
@@ -181,13 +185,13 @@ button:active {
   height: 15px;
   background: #3d5afe;
   border-radius: 50%;
-  visibility: hidden;
+  opacity: 0;
   cursor: pointer;
   pointer-events: auto;
 }
 
-.box:hover .dot {
-  visibility: visible;
+.box:hover .dot, .dot:hover {
+  opacity: 1;
 }
 
 .dot.in {
@@ -203,7 +207,6 @@ button:active {
   background: black;
   pointer-events: auto;
   cursor: pointer;
-  /* z-index: 2147483647; */
 }
 
 .arrow .arrowPart:nth-child(2), .arrow .arrowPart:nth-child(3), .arrow .arrowPart:nth-child(4) {
@@ -265,6 +268,11 @@ button:active {
 }
 
 #console {
+  background: black;
+  color: white;
+  height: 10em;
+  width: 15em;
+  overflow-y: auto;
   font-size: 18px;
   padding: 1em;
 }
