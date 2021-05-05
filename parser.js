@@ -1,252 +1,340 @@
-let scope = {}
-let builtIn = {
-  "int": (e) => parseInt(e),
-  "float": (e) => parseFloat(e),
-  "str": (e) => String(e)
-}
+class Parser {
+  constructor() {
+    this.builtins = {
+      "int": (e) => parseInt(e),
+      "float": (e) => parseFloat(e),
+      "str": (e) => String(e),
+      "add": (a, b) => a + b,
+      "sub": (a, b) => a - b
+    };
 
-let ops = [
-  {
-    symbol: "or",
-    fn: (s) => s.find((e) => e == true) || s[0]
-  },
-  {
-    symbol: "and",
-    fn: (s) => s.every((e) => e == true) ? s[s.length - 1] : s.find((e) => e == false)
-  },
-  {
-    unary: true,
-    symbol: "not",
-    pre: (s) => {
-      let r = /^not/
-      let nt = false
-      if (r.test(s)) {
-        s = s.replace(r, "")
-        nt = true
-      }
-      return [s, nt]
-    },
-    post: (s, nt) => {
-      return nt ? !s : s
-    }
-  },
-  {
-    symbol: "<=",
-    fn: (s) => {
-      let result = true
-      for (let i = 0; i < s.length - 1; i++) {
-        if (s[i] > s[i + 1]) {
-          result = false
-          break
+    this.scope = Object.assign({}, this.builtins);
+
+    this.operators = {
+      binary: {
+        "=": {
+          symbol: "=",
+          precedence: 0,
+          associativity: "rtl",
+          run: (a, b) => this.scope[a] = b
+        },
+        ":=": {
+          symbol: ":=",
+          precedence: 0,
+          associativity: "rtl",
+          run: (a, b) => this.scope[a] = b
+        },
+        "or": {
+          symbol: "or",
+          precedence: 3,
+          associativity: "ltr",
+          run: (a, b) => a || b,
+        },
+        "and": {
+          symbol: "and",
+          precedence: 4,
+          associativity: "ltr",
+          run: (a, b) => a && b
+        },
+        "<": {
+          symbol: "<",
+          precedence: 6,
+          associativity: "ltr",
+          run: (a, b) => a < b
+        },
+        "<=": {
+          symbol: "<=",
+          precedence: 6,
+          associativity: "ltr",
+          run: (a, b) => a <= b
+        },
+        ">": {
+          symbol: ">",
+          precedence: 6,
+          associativity: "ltr",
+          run: (a, b) => a > b
+        },
+        ">=": {
+          symbol: ">=",
+          precedence: 6,
+          associativity: "ltr",
+          run: (a, b) => a >= b
+        },
+        "!=": {
+          symbol: "!=",
+          precedence: 6,
+          associativity: "ltr",
+          run: (a, b) => a != b
+        },
+        "==": {
+          symbol: "==",
+          precedence: 6,
+          associativity: "ltr",
+          run: (a, b) => a == b
+        },
+        "+": {
+          symbol: "+",
+          precedence: 11,
+          associativity: "ltr",
+          run: (a, b) => a + b
+        },
+        "-": {
+          symbol: "-",
+          precedence: 11,
+          associativity: "ltr",
+          run: (a, b) => a - b
+        },
+        "*": {
+          symbol: "*",
+          precedence: 12,
+          associativity: "ltr",
+          run: (a, b) => a * b
+        },
+        "/": {
+          symbol: "/",
+          precedence: 12,
+          associativity: "ltr",
+          run: (a, b) => a / b
+        },
+        "//": {
+          symbol: "//",
+          precedence: 12,
+          associativity: "ltr",
+          run: (a, b) => Math.floor(a / b)
+        },
+        "%": {
+          symbol: "%",
+          precedence: 12,
+          associativity: "ltr",
+          run: (a, b) => a % b
+        },
+        "**": {
+          symbol: "**",
+          precedence: 14,
+          associativity: "rtl",
+          run: (a, b) => a ** b
+        }
+      },
+      unary: {
+        "not": {
+          symbol: "not",
+          precedence: 5,
+          associativity: "ltr",
+          run: (a) => !a,
+          unary: true
+        },
+        "+": {
+          symbol: "+",
+          precedence: 13,
+          associativity: "ltr",
+          run: (a) => +a,
+          unary: true
+        },
+        "-": {
+          symbol: "-",
+          precedence: 13,
+          associativity: "ltr",
+          run: (a) => -a,
+          unary: true
         }
       }
-      return result
-    }
-  },
-  {
-    symbol: "<",
-    fn: (s) => {
-      let result = true
-      for (let i = 0; i < s.length - 1; i++) {
-        if (s[i] >= s[i + 1]) {
-          result = false
-          break
-        }
+    };
+
+    this.atoms = [
+      {
+        name: "number",
+        match: /^\d+(\.\d+)?/
+      }, {
+        name: "string",
+        match: /^("[^"]*")|('[^']*')/
+      }, {
+        name: "boolean",
+        match: ["True", "False"]
+      }, {
+        name: "operator",
+        match: Object.keys(this.operators.binary).concat(Object.keys(this.operators.unary)).sort((a, b) => b.length - a.length)
+      }, {
+        name: "variable",
+        match: /^[\w_]+/
+      }, {
+        name: "leftBracket",
+        match: ["("]
+      }, {
+        name: "rightBracket",
+        match: [")"]
+      }, {
+        name: "comma",
+        match: [","]
       }
-      return result
-    }
-  },
-  {
-    symbol: ">=",
-    fn: (s) => {
-      let result = true
-      for (let i = 0; i < s.length - 1; i++) {
-        if (s[i] < s[i + 1]) {
-          result = false
-          break
-        }
-      }
-      return result
-    }
-  },
-  {
-    symbol: ">",
-    fn: (s) => {
-      let result = true
-      for (let i = 0; i < s.length - 1; i++) {
-        if (s[i] <= s[i + 1]) {
-          result = false
-          break
-        }
-      }
-      return result
-    }
-  },
-  {
-    symbol: "!=",
-    fn: (s) => {
-      let result = true
-      for (let i = 0; i < s.length - 1; i++) {
-        if (s[i] == s[i + 1]) {
-          result = false
-          break
-        }
-      }
-      return result
-    }
-  },
-  {
-    symbol: "==",
-    fn: (s) => {
-      let result = true
-      for (let i = 0; i < s.length - 1; i++) {
-        if (s[i] != s[i + 1]) {
-          result = false
-          break
-        }
-      }
-      return result
-    }
-  },
-  {
-    symbol: "+",
-    fn: (s) => s.reduce((a, b) => a + b)
-  },
-  {
-    symbol: "-",
-    fn: (s) => s.reduce((a, b) => a - b)
-  },
-  {
-    symbol: "*",
-    fn: (s) => s.reduce((a, b) => a * b)
-  },
-  {
-    symbol: "//",
-    fn: (s) => s.reduce((a, b) => Math.floor(a - b))
-  },
-  {
-    symbol: "/",
-    fn: (s) => s.reduce((a, b) => a / b)
-  },
-  {
-    symbol: "%",
-    fn: (s) => s.reduce((a, b) => a % b)
-  },
-  {
-    unary: true,
-    symbol: "+",
-    pre: (s) => [s.replace(/^\+/, "")],
-    post: (s) => s
-  },
-  {
-    unary: true,
-    symbol: "-",
-    pre: (s) => {
-      let r = /^-/
-      let um = false
-      if (r.test(s)) {
-        s = s.replace(r, "")
-        um = true
-      }
-      return [s, um]
-    },
-    post: (s, um) => um ? -s : s
-  },
-  {
-    symbol: "**",
-    fn: (s) => s.reduce((a, b) => a ** b)
+    ];
   }
-]
 
-function parse(input) {
-  let s = pSplit(input, "=") // First parse assignments
-  let expr = parseOp(0, s.pop()) // Start of chain from lowest precedence to highest
-  if (s.length > 0) {
-    s.forEach((e) => scope[e] = expr)
-    flue.updateScope()
-  }
-  return expr
-}
-
-function parseOp(i, input) {
-  let op = ops[i]
-  if (op.unary) {
-    [val, temp] = op.pre(input)
-    if (ops[i + 1]) val = parseOp(i + 1, val)
-    else val = checkParentheses(val)
-    return op.post(val, temp)
-  } else {
-    let s = pSplit(input, op.symbol)
-    if (ops[i + 1]) s = s.map((e) => parseOp(i + 1, e))
-    else s = checkParentheses(s)
-    if (s.length < 2) return s[0] // If there is only one, there is nothing to compute
-    else return op.fn(s)
-  }
-}
-
-function checkParentheses(s) {
-  return s.map((e) => {
-    e = e.trim()
-    let r = /^(\w*) *\((.*)\)/
-    if (r.test(e)) {
-      let ex = r.exec(e)
-      let result = parse(ex[2])
-      if (ex[1].length > 0) {
-        return builtIn[ex[1]](result)
+  tokenize(input) {
+    let tokens = [];
+    let cursorPos = 0;
+    let slice = input.trim();
+    while (slice.length > 0) {
+      let found;
+      for (let a of this.atoms) {
+        if (Array.isArray(a.match)) {
+          for (let m of a.match) {
+            if (slice.startsWith(m)) {
+              found = { "name": a.name, "value": m };
+              break;
+            }
+          }
+        } else {
+          let match = slice.match(a.match);
+          if (match !== null) {
+            found = { "name": a.name, "value": match[0] };
+            break;
+          }
+        }
+        if (found) break;
+      }
+      if (found) {
+        tokens.push(found);
+        cursorPos += found.value.length;
+        while (input[cursorPos] == " ") cursorPos++;
+        slice = input.slice(cursorPos);
       } else {
-        return result // recursion when parentheses are present
+        throw new SyntaxError();
       }
     }
-    return getValue(e)
-  })
-}
-
-function getValue(input) {
-  if (typeof input == "boolean") return input
-  else if (input == "True") return true
-  else if (input == "False") return false
-  else if (!isNaN(parseFloat(input))) return parseFloat(input)
-  else if (input.startsWith("'") || input.startsWith("\"")) return input.substring(1, input.length - 1)
-  else return scope[input]
-}
-
-
-let operators = [...new Set(ops.map((e) => e.symbol))]
-
-// Only splits when outside of parentheses
-function pSplit(input, o) {
-  let b = 0
-  let result = []
-  let c = ""
-  let i = 0
-  while (i < input.length) {
-    let e = input[i]
-    if (e == "(") b++
-    else if (e == ")") b--
-    let u = false
-    if (o == "+" || o == "-") { // prevent binary operators to pick up their unary versions
-      let before = input.substring(0, i).replace(/ /g, "")
-      if (before.length == 0) u = true
-      let j = 0
-      while (j < operators.length) {
-        if (before.substring(before.length - operators[j].length, before.length) == operators[j]) {
-          u = true
-          break
-        }
-        j++
-      }
-    }
-    if (o == "=" && (input[i - 1] == "=" || input[i + 1] == "=")) u = true
-    if (o == "*" && (input[i - 1] == "*" || input[i + 1] == "*")) u = true
-    if (b == 0 && input.substring(i, i + o.length) == o && !["<", ">", "!", "*"].includes(input[i - 1]) && !u) {
-      result.push(c.trim())
-      c = ""
-      i += o.length
-    } else {
-      c += e
-      i++
-    }
+    return tokens;
   }
-  if (c != "") result.push(c.trim())
-  return result
+
+  parse(tokens) {
+    let tree = {
+      args: []
+    };
+    let track = [tree];
+    let currentTree = tree;
+    for (let token of tokens) {
+      switch (token.name) {
+        case "operator":
+          if (currentTree.args.length > 0) {
+            if (currentTree.operator === undefined) {
+              currentTree.operator = this.operators.binary[token.value];
+            } else {
+              let operator = this.operators.binary[token.value];
+              if (operator.precedence > currentTree.operator.precedence || operator.precedence == currentTree.operator.precedence && operator.associativity == "rtl") {
+                let lastValue = currentTree.args.pop();
+                let newTree = {
+                  operator: operator,
+                  args: [lastValue]
+                };
+                currentTree.args.push(newTree);
+                track.push(newTree);
+                currentTree = newTree;
+              } else {
+                let newTree = Object.assign({}, currentTree);
+                currentTree.operator = operator;
+                currentTree.args = [newTree];
+              }
+            }
+          } else {
+            currentTree.operator = this.operators.unary[token.value];
+          }
+
+          if (currentTree.operator && currentTree.operator.unary) {
+            track.pop();
+            currentTree = track[track.length - 1];
+          }
+          break;
+        case "leftBracket":
+          let newTree = {
+            args: []
+          };
+          let lastArg = currentTree.args[currentTree.args.length - 1];
+          if (lastArg && typeof lastArg == "object" && lastArg.name != "operator") {
+            let caller = currentTree.args.pop();
+            let newTree = {
+              operator: {
+                symbol: "call",
+                precedence: .6,
+                associativity: "ltr"
+              },
+              args: [caller]
+            };
+            currentTree.args.push(newTree);
+            track.push(newTree);
+            currentTree = newTree;
+          }
+          if (currentTree.args.length > 0) {
+            currentTree.args.push(newTree);
+            track.push(newTree);
+            currentTree = newTree;
+          } else {
+            currentTree.operator = newTree.operator;
+          }
+          break;
+        case "rightBracket":
+          track.pop();
+          currentTree = track[track.length - 1];
+          break;
+        case "comma":
+          track.pop();
+          currentTree = track[track.length - 1];
+          if (currentTree.operator != "tuple") {
+            let firstElement = currentTree.args.pop();
+            let newTree = {
+              operator: {
+                symbol: "tuple",
+                precedence: .5
+              },
+              args: [firstElement]
+            };
+            currentTree.args.push(newTree);
+            track.push(newTree);
+            currentTree = newTree;
+          }
+          break;
+        default:
+          currentTree.args.push({ name: token.name, value: token.value });
+          break;
+      }
+    }
+    if (tree.operator === undefined) return tree.args[0];
+    return tree;
+  }
+
+  run(ast) {
+    if (!ast.operator && ast.args) return this.run(ast.args[0]);
+    let args = [];
+    if ("value" in ast) {
+      switch (ast.name) {
+        case "number":
+          return parseFloat(ast.value);
+        case "string":
+          return ast.value.slice(1, ast.value.length - 1); // remove quotation marks
+        case "boolean":
+          return ast.value == "True";
+        case "variable":
+          return this.scope[ast.value];
+      }
+    }
+    if (ast.operator.symbol == "call") {
+      let caller = ast.args[0];
+      let finalArgs = [];
+      if (ast.args[1]) {
+        ast.args[1].args.forEach((e) => {
+          if (Array.isArray(e)) finalArgs.push(e);
+          else finalArgs.push(this.run(e));
+        });
+      }
+      return this.scope[caller.value](...finalArgs);
+    }
+    ast.args.forEach((e) => {
+      if (Array.isArray(e)) args.push(e);
+      else args.push(this.run(e));
+    });
+    if (ast.operator.symbol == "=") {
+      return ast.operator.run(ast.args[0].value, args[1]);
+    }
+    return ast.operator.run(...args);
+  }
 }
+
+let parser = new Parser();
+parser.run(parser.parse(parser.tokenize("sub(4*5, 2*3)")));

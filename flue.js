@@ -16,6 +16,8 @@ class Flue {
     this.dotSize = 15
     this.arrowThickness = 3
 
+    this.parser = new Parser()
+
     document.addEventListener("mousedown", (e) => {
       if (e.target.classList.contains("out")) {
         this.addArrow(e)
@@ -231,13 +233,13 @@ class Flue {
 
   updateScope() {
     $("#scope").innerHTML = ""
-    for (const e in scope) {
-      $("#scope").innerHTML += `<tr><td>${e}</td><td>${scope[e]}</td></tr>`
+    for (const e in this.parser.scope) {
+      $("#scope").innerHTML += `<tr><td>${e}</td><td>${this.parser.scope[e]}</td></tr>`
     }
   }
 
   run() {
-    scope = {}
+    this.parser.scope = Object.assign({}, this.parser.builtins)
     $("#scope").innerHTML = ""
     $("#console").innerHTML = ""
     let list = []
@@ -259,23 +261,23 @@ class Flue {
         as = []
         break
       case "statement":
-        parse(b.el.querySelector("input").value)
+        this.parser.run(this.parser.parse(this.parser.tokenize(b.el.querySelector("input").value)));
         as = b.out
         break
       case "conditional":
-        let i = parse(b.el.querySelector("input").value) ? 0 : 1
+        let i = this.parser.run(this.parser.parse(this.parser.tokenize(b.el.querySelector("input").value))) ? 0 : 1
         as = b.out.filter((e) => this.arrows[e].outN == i)
         break
       case "input":
         b.el.querySelector("input").value.split(",").forEach((e) => {
           e = e.trim()
-          scope[e] = prompt(e + ":")
+          this.parser.scope[e] = prompt(e + ":")
         })
         this.updateScope()
         as = b.out
         break
       case "output":
-        $("#console").innerHTML += parse(b.el.querySelector("input").value) + "<br />"
+        $("#console").innerHTML += this.parser.run(this.parser.parse(this.parser.tokenize(b.el.querySelector("input").value))) + "<br />"
         as = b.out
         break
       default:
