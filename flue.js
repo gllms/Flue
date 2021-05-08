@@ -305,6 +305,7 @@ class Flue {
         break
       case "statement":
         this.parser.run(this.parser.parse(this.parser.tokenize(b.el.querySelector("input").value)));
+        this.updateScope()
         as = b.out
         break
       case "conditional":
