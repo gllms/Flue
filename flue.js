@@ -304,16 +304,16 @@ class Flue {
         as = []
         break
       case "statement":
-        this.parser.run(this.parser.parse(this.parser.tokenize(b.el.querySelector("input").value)));
+        this.parser.run(this.parser.parse(this.parser.tokenize(b.value)));
         this.updateScope()
         as = b.out
         break
       case "conditional":
-        let i = this.parser.run(this.parser.parse(this.parser.tokenize(b.el.querySelector("input").value))) ? 0 : 1
+        let i = this.parser.run(this.parser.parse(this.parser.tokenize(b.value))) ? 0 : 1
         as = b.out.filter((e) => this.arrows[e].outN == i)
         break
       case "input":
-        b.el.querySelector("input").value.split(",").forEach((e) => {
+        b.value.split(",").forEach((e) => {
           e = e.trim()
           this.parser.scope[e] = prompt(e + ":")
         })

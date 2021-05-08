@@ -13,6 +13,7 @@ if (save != null) {
     box.in = save.boxes[b].in
     box.x = save.boxes[b]._x
     box.y = save.boxes[b]._y
+    box.value = save.boxes[b].value
     let input = box.el.querySelector("input")
     if (input) {
       input.value = save.boxes[b].value
