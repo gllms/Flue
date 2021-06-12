@@ -175,14 +175,14 @@ class Flue {
         parts[0].style.height = arrowEnd.style.width = half + "px";
         parts[1].style.width = Math.abs(dx) + "px";
         parts[1].style.top = r.y + half - 3 + "px";
-        parts[1].style.left = rr.x > r.x ? r.x + "px" : r.x + dx + 3 + "px";
+        parts[1].style.left = rr.x > r.x ? r.x + "px" : r.x + dx + "px";
         parts[0].style.width = parts[1].style.height = "3px";
 
         arrowEnd.style.top = r.y + half - 3 + half / 2 + "px";
         if (dx < 0) {
-          arrowEnd.style.left = r.x + dx + 4.5 - half / 2 + "px";
+          arrowEnd.style.left = r.x + dx - half / 2 + "px";
         } else {
-          arrowEnd.style.left = r.x + dx - 1.5 - half / 2 + "px";
+          arrowEnd.style.left = r.x + dx - half / 2 + "px";
         }
         arrowEnd.style.transform = `rotate(${Math.PI / 2}rad)`;
         parts[0].style.display = "block";
@@ -199,22 +199,22 @@ class Flue {
       parts[0].style.width = parts[1].style.height = parts[3].style.height = parts[2].style.width = "3px";
 
       let half = dx / 2;
-      parts[1].style.width = Math.abs(half) + 3 + "px";
+      parts[1].style.width = Math.abs(half) + 2 + "px";
       parts[1].style.left = rr.x > r.x ? r.x + "px" : rr.x - half + "px";
       parts[1].style.top = r.y + 30 - 3 + "px";
 
-      parts[3].style.width = Math.abs(half) + "px";
-      parts[3].style.left = rr.x > r.x ? rr.x - half + "px" : rr.x + "px";
+      parts[3].style.width = Math.abs(half) + 1 + "px";
+      parts[3].style.left = rr.x > r.x ? rr.x - half + "px" : rr.x - 2 + "px";
       parts[3].style.top = rr.y - 30 + "px";
 
       parts[2].style.top = rr.y - 30 + "px";
       // parts[2].style.left = rr.x > r.x ? r.x + half + "px" : rr.x - half + "px"
-      parts[2].style.left = r.x + half + "px";
+      parts[2].style.left = r.x + half - 1 + "px";
       parts[2].style.height = -dy + 60 + "px";
 
       arrowEnd.style.width = 30 - 3 + "px";
       arrowEnd.style.top = rr.y - 30 + 15 - 1.5 + "px";
-      arrowEnd.style.left = rr.x > r.x ? rr.x - 15 + "px" : rr.x - 15 + 3 + "px";
+      arrowEnd.style.left = rr.x > r.x ? rr.x - 15 + 1.5 + "px" : rr.x - 15 + 1.5 + "px";
       arrowEnd.style.transform = `rotate(${Math.PI / 2}rad)`;
 
       parts[0].style.display = "block";
